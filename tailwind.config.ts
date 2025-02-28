@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -84,11 +85,101 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					from: {
+						opacity: '0'
+					},
+					to: {
+						opacity: '1'
+					}
+				},
+				'fade-out': {
+					from: {
+						opacity: '1'
+					},
+					to: {
+						opacity: '0'
+					}
+				},
+				'slide-up': {
+					from: {
+						transform: 'translateY(10px)',
+						opacity: '0'
+					},
+					to: {
+						transform: 'translateY(0)',
+						opacity: '1'
+					}
+				},
+				'slide-down': {
+					from: {
+						transform: 'translateY(-10px)',
+						opacity: '0'
+					},
+					to: {
+						transform: 'translateY(0)',
+						opacity: '1'
+					}
+				},
+				'scale-in': {
+					from: {
+						transform: 'scale(0.95)',
+						opacity: '0'
+					},
+					to: {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
+				},
+				'pulse-light': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.8'
+					}
+				},
+				'spin-slow': {
+					from: {
+						transform: 'rotate(0deg)'
+					},
+					to: {
+						transform: 'rotate(360deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'fade-out': 'fade-out 0.3s ease-out',
+				'slide-up': 'slide-up 0.4s ease-out',
+				'slide-down': 'slide-down 0.4s ease-out',
+				'scale-in': 'scale-in 0.3s ease-out',
+				'pulse-light': 'pulse-light 2s ease-in-out infinite',
+				'spin-slow': 'spin-slow 3s linear infinite'
+			},
+			backdropFilter: {
+				'none': 'none',
+				'blur': 'blur(20px)'
+			},
+			boxShadow: {
+				'neo': '5px 5px 10px rgba(0, 0, 0, 0.03), -5px -5px 10px rgba(255, 255, 255, 0.05)',
+				'neo-pressed': 'inset 5px 5px 10px rgba(0, 0, 0, 0.03), inset -5px -5px 10px rgba(255, 255, 255, 0.05)',
+				'glass': '0 4px 30px rgba(0, 0, 0, 0.1)'
+			},
+			transitionProperty: {
+				'height': 'height',
+				'spacing': 'margin, padding',
+			},
+			transitionTimingFunction: {
+				'bounce-in': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+				'bounce-out': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+			},
+			transitionDuration: {
+				'250': '250ms',
+				'1500': '1500ms',
 			}
 		}
 	},
