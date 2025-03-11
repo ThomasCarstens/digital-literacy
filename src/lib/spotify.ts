@@ -1,47 +1,39 @@
-
-// Mock Spotify API service
-// In a real app, this would connect to the Spotify Web API
-
+// Spotify API service with Genkit integration
 import { toast } from "../hooks/use-toast";
 import type { Album } from "../context/AppContext";
+import { initializeApp } from 'firebase/app';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { captureImage } from "./imageRecognition";
 
-const mockAlbums = [
-  {
-    id: "1",
-    name: "The Dark Side of the Moon",
-    artist: "Pink Floyd",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273ea7caaff71dea1051d49b2fe",
-    spotifyId: "4LH4d3cOWNNsVw41Gqt2kv",
-  },
-  {
-    id: "2",
-    name: "Thriller",
-    artist: "Michael Jackson",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b2734121faee8df82c526cbab2be",
-    spotifyId: "2ANVost0y2y52ema1E9xAZ",
-  },
-  {
-    id: "3",
-    name: "Abbey Road",
-    artist: "The Beatles",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273dc30583ba717007b00cceb25",
-    spotifyId: "0ETFjACtuP2ADo6LFhL6HN",
-  },
-  {
-    id: "4",
-    name: "Back in Black",
-    artist: "AC/DC",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273d9b35b805b4a55de2cc0458e",
-    spotifyId: "6mUdeDZCsExyJLMdAfDuwh",
-  },
-  {
-    id: "5",
-    name: "Rumours",
-    artist: "Fleetwood Mac",
-    imageUrl: "https://i.scdn.co/image/ab67616d0000b273e52a59a28efa4773dd2bfe1b",
-    spotifyId: "1bt6q2SruMsBtcerNVtpZB",
-  },
-];
+// // Initialize Firebase
+// const initFirebase = () => {
+//   // Your Firebase configuration
+//   // Replace this with your actual Firebase config
+//   const firebaseConfig = {
+//     apiKey: "YOUR_API_KEY",
+//     authDomain: "YOUR_AUTH_DOMAIN",
+//     projectId: "YOUR_PROJECT_ID",
+//     storageBucket: "YOUR_STORAGE_BUCKET",
+//     messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+//     appId: "YOUR_APP_ID"
+//   };
+
+//   // Initialize Firebase
+//   return initializeApp(firebaseConfig);
+// };
+
+// // Initialize Firebase app
+// const firebaseApp = initFirebase();
+
+// Type definitions for the Spotify album response from Genkit
+interface SpotifyAlbumResponse {
+  albumTitle: string;
+  artist: string;
+  spotifyAlbumId: string;
+  spotifyUrl: string;
+  releaseDate?: string;
+  totalTracks?: number;
+}
 
 // Simulate API latency
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -62,20 +54,71 @@ export const authenticateWithSpotify = async (): Promise<boolean> => {
   }
 };
 
-// Mock function to identify an album from an image
-export const identifyAlbumFromImage = async (imageUrl: string): Promise<Album | null> => {
+// Helper function to call the Firebase Genkit function
+const callFindAlbumFunction = async (base64Image: string): Promise<SpotifyAlbumResponse> => {
   try {
-    // Simulate API latency
-    await delay(2000);
+    // Get Firebase functions instance
+    const functions = getFunctions();
     
-    // Randomly select a mock album (in a real app, this would use computer vision)
-    const randomIndex = Math.floor(Math.random() * mockAlbums.length);
-    const album = mockAlbums[randomIndex];
+    // Create callable function reference
+    const findAlbumOnSpotify = httpsCallable<
+      { image: string }, 
+      SpotifyAlbumResponse
+    >(functions, 'findAlbumOnSpotify');
     
-    return {
-      ...album,
+    // Call the function with the base64 image
+    const result = await findAlbumOnSpotify({ image: base64Image });
+    
+    // Return the data from the function call
+    return result.data;
+  } catch (error) {
+    console.error("Firebase function call failed:", error);
+    throw new Error("Album recognition failed. Please try again.");
+  }
+};
+
+// Function to identify an album from an image using Genkit
+export const identifyAlbumFromImage = async (): Promise<Album | null> => {
+  try {
+    toast({
+      title: "Processing",
+      description: "Capturing image and identifying album...",
+    });
+
+    // Step 1: Capture image from camera
+    const imageDataUrl = await captureImage();
+    if (!imageDataUrl) {
+      throw new Error("Failed to capture image");
+    }
+
+    // Step 2: Convert image to base64 (remove the data:image/jpeg;base64, prefix)
+    const base64Image = imageDataUrl.split(',')[1];
+    
+    toast({
+      title: "Analyzing",
+      description: "Identifying album from image...",
+    });
+
+    // Step 3: Call Firebase Genkit function
+    const albumInfo = await callFindAlbumFunction(base64Image);
+    
+    // Step 4: Convert to the Album format expected by your app
+    const album: Album = {
+      id: albumInfo.spotifyAlbumId, // Using Spotify ID as the album ID
+      name: albumInfo.albumTitle,
+      artist: albumInfo.artist,
+      imageUrl: "", // Note: The Genkit function doesn't return an image URL
+      spotifyId: albumInfo.spotifyAlbumId,
       timestamp: Date.now(),
+      spotifyUrl: albumInfo.spotifyUrl
     };
+    
+    toast({
+      title: "Success",
+      description: `Found "${album.name}" by ${album.artist}`,
+    });
+    
+    return album;
   } catch (error) {
     console.error("Album identification error:", error);
     toast({
@@ -87,17 +130,22 @@ export const identifyAlbumFromImage = async (imageUrl: string): Promise<Album | 
   }
 };
 
-// Mock function to play album on Spotify
+// Function to play album on Spotify
 export const playAlbum = async (spotifyId: string): Promise<boolean> => {
   try {
-    // Simulate API latency
-    await delay(800);
+    // You could use the Spotify Web Playback SDK here if integrated
+    // For now, we'll open the Spotify URL in a new tab
+    
+    // Construct Spotify URI from ID
+    const spotifyUri = `spotify:album:${spotifyId}`;
+    
+    // Try to open the Spotify app first using URI
+    window.location.href = spotifyUri;
     
     toast({
       title: "Now Playing",
-      description: "Album started playing on Spotify",
+      description: "Album opened in Spotify sdafsd",
     });
-    
     return true;
   } catch (error) {
     console.error("Spotify playback error:", error);
@@ -110,17 +158,37 @@ export const playAlbum = async (spotifyId: string): Promise<boolean> => {
   }
 };
 
-// Mock function to pause Spotify playback
+// Function to play album using spotifyUrl
+export const playAlbumWithUrl = async (spotifyUrl: string): Promise<boolean> => {
+  try {
+    // Open Spotify URL in a new tab
+    window.open(spotifyUrl, "_blank");
+    
+    toast({
+      title: "Opening Spotify",
+      description: "Album link opened in new tab",
+    });
+    return true;
+  } catch (error) {
+    console.error("Spotify URL open error:", error);
+    toast({
+      title: "Failed",
+      description: "Could not open Spotify link",
+      variant: "destructive",
+    });
+    return false;
+  }
+};
+
+// Function to pause Spotify playback
 export const pausePlayback = async (): Promise<boolean> => {
   try {
-    // Simulate API latency
+    // This would use Spotify Web API or SDK in a real integration
     await delay(400);
-    
     toast({
       title: "Paused",
       description: "Playback paused",
     });
-    
     return true;
   } catch (error) {
     console.error("Spotify pause error:", error);
