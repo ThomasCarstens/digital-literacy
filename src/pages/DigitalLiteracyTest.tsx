@@ -25,7 +25,10 @@ const DigitalLiteracyTest = () => {
     { id: 3, name: 'Internet Explorer', icon: '🌐', left: 20, top: 180 },
     { id: 4, name: 'My Computer', icon: '💻', left: 20, top: 260 }
   ]);
-  
+  // Handler function to update the search query state
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
   // Predefined content for various applications
   const appContent = {
     'My Documents': `
@@ -56,7 +59,7 @@ const DigitalLiteracyTest = () => {
             placeholder="Enter search query..."
             class="flex-1 p-1 text-sm border border-gray-300"
             id="search-input"
-            onchange="window.updateSearchQuery(this.value)"
+            onchange="handleSearchChange"
           />
           <button class="bg-blue-500 text-white px-2 py-1 ml-1 text-xs" id="search-button">Search</button>
         </div>
@@ -475,8 +478,11 @@ const DigitalLiteracyTest = () => {
   };
 
   // Perform search
-  const handleSearch = (handledQuery: string) => {
+  const handleSearch = (text:string) => {
+    // setSearchQuery(handledQuery)
     console.log('handleSearch')
+    console.log('text found is', text)
+    let handledQuery = searchQuery
     console.log(handledQuery)
     if (handledQuery.toLowerCase().includes("digital literacy")) {
       checkTaskCompletion()
@@ -651,29 +657,25 @@ const DigitalLiteracyTest = () => {
       if (isLoggedIn) {
         // Find Internet Explorer window search button
         const searchButton = document.getElementById("search-button");
-        if (searchButton) {
-          searchButton.addEventListener("click", (e) => {
-            handleSearch(searchQuery); // Now it will use the current searchQuery value
-            
-          });
-        }
+      if (searchButton) {
+        searchButton.addEventListener("click", (e) => {
+          handleSearch('click'); // Use the state value directly
+        });
+      }
+      
+      const searchInput = document.getElementById("search-input");
+      if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+          setSearchQuery(e.target.value);
+        });
         
-        const searchInput = document.getElementById("search-input");
-        if (searchInput) {
-          searchInput.addEventListener("input", (e) => {
-            setSearchQuery(e.target.value);
-            console.log(e.target.value)
-            console.log(searchQuery)
-            // console.log(typeof(e.target.value))
-          });
-          
-          // Allow pressing Enter in search input
-          searchInput.addEventListener("keyup", (e) => {
-            if (e.key === "Enter") {
-              handleSearch(e.target.value);
-            }
-          });
-        }
+        // Allow pressing Enter in search input
+        searchInput.addEventListener("keyup", (e) => {
+          if (e.key === "Enter") {
+            handleSearch('keyup'); // Use the state value directly
+          }
+        });
+      }
         
         // Find File Explorer window new folder button
         const newFolderButton = document.getElementById("new-folder");
@@ -692,20 +694,25 @@ const DigitalLiteracyTest = () => {
       
       return () => {
         const searchButton = document.getElementById("search-button");
-        if (searchButton) {
-          searchButton.removeEventListener("click", handleSearch);
-        }
+      if (searchButton) {
+        searchButton.removeEventListener("click", () => {
+          handleSearch(); // Use the state value directly
+        });
+      }
+      
+      const searchInput = document.getElementById("search-input");
+      if (searchInput) {
+        searchInput.removeEventListener("input", (e) => {
+          setSearchQuery(e.target.value);
+        });
         
-        const searchInput = document.getElementById("search-input");
-        if (searchInput) {
-          searchInput.removeEventListener("input", (e) => {
-            setSearchQuery(e.target.value);});
-          searchInput.removeEventListener("keyup", (e) => {
-            if (e.key === "Enter") {
-              handleSearch();
-            }
-          });
-        }
+        // Allow pressing Enter in search input
+        searchInput.removeEventListener("keyup", (e) => {
+          if (e.key === "Enter") {
+            handleSearch(); // Use the state value directly
+          }
+        });
+      }
         const newFolderButton = document.getElementById("new-folder");
         if (newFolderButton) {
           newFolderButton.removeEventListener("click", handleCreateFolder);
@@ -723,7 +730,7 @@ const DigitalLiteracyTest = () => {
     // Small delay to ensure DOM is ready
     const timeout = setTimeout(handleWindowClicks, 100);
     return () => clearTimeout(timeout);
-  }, [windows, searchResults, isLoggedIn, currentTask]);
+  }, [windows, searchResults, isLoggedIn, currentTask, searchQuery]);
 
   return (
     <div className="flex flex-col items-center w-full">
